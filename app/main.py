@@ -4,6 +4,7 @@ from datetime import datetime
 from .features.git import Git
 import os
 import json
+from .routers import events
 
 app = FastAPI(
     swagger_ui_parameters={
@@ -35,6 +36,9 @@ async def root():
         "time": datetime.utcnow()
     }
 
+
 @app.get("/health-check")
 def health_check():
     return "success"
+
+app.include_router(events.router)
