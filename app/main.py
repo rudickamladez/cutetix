@@ -1,9 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
-from .features.git import Git
+from app.features.git import Git
 import os
 import json
+import sys
+from app.routers import events, ticket_groups, tickets
+from app.schemas.root import RootResponse
 
 app = FastAPI(
     swagger_ui_parameters={
@@ -15,7 +18,14 @@ app = FastAPI(
     description="REST API with database of ticket reservations",
 )
 
-origins = json.loads(os.getenv("CORS_ORIGINS"))
+try:
+    origins = json.loads(os.getenv("CORS_ORIGINS"))
+except:  # noqa: E722
+    print(
+        'Missing defined ENV variable CORS_ORIGINS, using default value ["*"].',
+        file=sys.stderr,
+    )
+    origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,
@@ -26,7 +36,7 @@ app.add_middleware(
 )
 
 
-@app.get("/")
+@app.get("/", response_model=RootResponse)
 async def root():
     git = Git()
     return {
@@ -36,6 +46,11 @@ async def root():
     }
 
 
-@app.get("/health-check")
+@app.get("/health-check", response_model=str)
 def health_check():
     return "success"
+
+
+app.include_router(events.router)
+app.include_router(ticket_groups.router)
+app.include_router(tickets.router)
